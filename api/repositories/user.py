@@ -1,6 +1,7 @@
 from fastapi import Depends
 from typing import Annotated
 from supabase import AClient as Supabase
+from api import utils
 from api.saas.supabase import async_client
 from api.entities import errors, models
 
@@ -66,3 +67,43 @@ class UserRepository:
                 'hash': data.auth_key
             }) \
             .eq('uid', data.license_key).execute()
+
+    async def create_user_action(self, uid: str, service: str, action: str, data: dict) -> models.UserAction:
+        result = await self.supabase \
+            .table('actions') \
+            .insert({
+                'uid': uid,
+                'service': service,
+                'action': action,
+                'data': data
+            }) \
+            .execute()
+
+        action = result.data[0]
+        return models.UserAction(
+            uid=action['uid'],
+            service=action['service'],
+            action=action['action'],
+            data=action['data'] if 'data' in action else None,
+        )
+    
+    async def get_user_actions(self, uid: str, service: str, action: str) -> list[models.UserAction]:
+        before = utils.start_of_today()
+        result = await self.supabase \
+            .table('actions') \
+            .select('*') \
+            .eq('uid', uid) \
+            .eq('service', service) \
+            .eq('action', action) \
+            .filter('created_at', 'gte', before) \
+            .execute()
+
+        return [
+            models.UserAction(
+                uid=action['uid'],
+                service=action['service'],
+                action=action['action'],
+                data=action['data'] if 'data' in action else None,
+            )
+            for action in result.data
+        ]

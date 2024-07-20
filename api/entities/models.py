@@ -1,7 +1,6 @@
 from enum import Enum
-from typing import Union, List
-from datetime import date, datetime
-from pydantic import BaseModel
+from datetime import datetime
+from pydantic import BaseModel, Field
 
 class TokenType(str, Enum):
     ACCESS = "access"
@@ -48,3 +47,13 @@ class Refresh(BaseModel):
 
 class AuthToken(BaseModel):
     access_token: str
+
+class CreateAction(BaseModel):
+    data: dict | None = Field(default={})
+
+
+class UserAction(BaseModel):
+    uid: str
+    service: str
+    action: str
+    data: dict | None

@@ -72,6 +72,40 @@ async def sign_in(
 
     return token.model_dump()
 
+@router.get(
+    path="/service/{service}/action/{action}",
+    summary="User actions",
+    description="User actions",
+)
+async def get_user_action(
+    service: str,
+    action: str,
+    user: Annotated[models.User, Depends(verify_user)],
+    user_repository: Annotated[UserRepository, Depends(UserRepository)],
+):
+    actions = await user_repository.get_user_actions(user.uid, service, action)
+
+    return {
+        "count": len(actions),
+        "data": [action.model_dump() for action in actions]
+    }
+
+@router.post(
+    path="/service/{service}/action/{action}",
+    summary="User action",
+    description="User action",
+)
+async def create_user_action(
+    service: str,
+    action: str,
+    data: models.CreateAction,
+    user: Annotated[models.User, Depends(verify_user)],
+    user_repository: Annotated[UserRepository, Depends(UserRepository)],
+) -> models.UserAction:
+    action = await user_repository.create_user_action(user.uid, service, action, data.data)
+
+    return action.model_dump()
+
 @router.post(
     path="/license",
     summary="grant license",
