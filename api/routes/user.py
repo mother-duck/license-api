@@ -72,6 +72,44 @@ async def sign_in(
 
     return token.model_dump()
 
+@router.post(
+    path="/auth",
+    summary="authorization",
+    description="User authorization",
+)
+async def sign_in(
+    data: models.AuthInfo,
+    user_repository: Annotated[UserRepository, Depends(UserRepository)],
+    license_repository: Annotated[LicenseRepository, Depends(LicenseRepository)],
+) -> models.AuthToken:
+    try:
+        auth: models.Auth = await user_repository.get_auth_by_key(data.auth_key)
+
+        licenses = await license_repository.find_licenses(uid=auth.uid)
+
+        now = utils.utcnow()
+        exp = utils.date_after(1)
+
+        payload = models.AccessToken(
+            sub=auth.uid,
+            iat=int(now.timestamp() * 1000),
+            exp=int(exp.timestamp() * 1000),
+            tty=models.TokenType.ACCESS,
+            svc=[license.service for license in licenses]
+        )
+
+        access_token = utils.encode_jwt(payload.model_dump())
+
+        token = models.AuthToken(
+            access_token=access_token
+        )
+
+        return token.model_dump()
+
+    except errors.NotFoundException:
+        raise errors.UnauthorizedException()
+
+
 @router.get(
     path="/service/{service}/action/{action}",
     summary="User actions",

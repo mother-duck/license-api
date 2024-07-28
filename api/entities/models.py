@@ -17,6 +17,9 @@ class SignIn(BaseModel):
     license_key: str
     auth_key: str
 
+class AuthInfo(BaseModel):
+    auth_key: str
+
 class SignUp(BaseModel):
     name: str
 

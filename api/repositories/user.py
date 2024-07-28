@@ -50,6 +50,26 @@ class UserRepository:
 
         return auth
 
+    async def get_auth_by_key(self, key: str) -> models.Auth:
+        result = await self.supabase \
+            .table('auth') \
+            .select("*") \
+            .eq("hash", key) \
+            .maybe_single().execute()
+
+        if not result.data:
+            raise errors.NotFoundException()
+
+        auth = models.Auth(
+            uid=result.data['uid'],
+            name=result.data['name'],
+            hash=result.data['hash'],
+            salt=result.data['salt'],
+            created_at=result.data['created_at']
+        )
+
+        return auth
+
     async def sign_up(self, data: models.SignUp) -> models.Auth:
         params = { "name": data.name }
         results = await self.supabase \
